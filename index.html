@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALM PointImage v2.0 – شبكة بكسلات + مفتاح 32‑بت</title>
+<title>ALM PointImage v3.0 – شبكة بكسلات + مفتاح 32‑بت</title>
 
 <style>
 body {
@@ -60,15 +60,15 @@ textarea, input[type="file"], input[type="text"] {
 
 <body>
 
-<header>ALM PointImage v2.0 – شبكة بكسلات</header>
+<header>ALM PointImage v3.0 – شبكة بكسلات</header>
 
 <div class="container">
 
-  <h3>1) مفتاح المستخدم (32‑بت)</h3>
+  <h3>1) مفتاح المستخدم (32‑بت – ثماني خانات هكس)</h3>
   <input id="userKey" type="text" value="A1B2C3D4" placeholder="مثال: A1B2C3D4">
 
   <h3>2) تحويل النص إلى صورة نقاط</h3>
-  <textarea id="inputText" rows="6" placeholder="اكتب أي نص..."></textarea>
+  <textarea id="inputText" rows="6" placeholder="اكتب أي نص (عربي، إنجليزي، رموز، إيموجي...)"></textarea>
   <button onclick="encodeToImage()">تحويل إلى صورة نقاط</button>
 
   <canvas id="pointCanvas" style="margin-top:20px;"></canvas>
@@ -131,7 +131,6 @@ function xorBytesWithKey(bytes, key32) {
   const k1 = (key32 >>> 16) & 0xFF;
   const k2 = (key32 >>> 8) & 0xFF;
   const k3 = key32 & 0xFF;
-
   const out = [];
   for (let i = 0; i < bytes.length; i++) {
     const k = [k0, k1, k2, k3][i % 4];
@@ -151,20 +150,26 @@ function encodeToImage() {
     return;
   }
 
-  // Base64 لضمان دعم أي رمز
-  const base64 = btoa(unescape(encodeURIComponent(text)));
-  let data = textToBytes(base64);
+  // 1) نص → بايتات (UTF-8)
+  let plainBytes = textToBytes(text);
 
-  // تشفير XOR
-  data = xorBytesWithKey(data, key32);
+  // 2) XOR بالمفتاح (تشفير على النص الأصلي)
+  let encryptedBytes = xorBytesWithKey(plainBytes, key32);
 
-  const length = data.length;
-  const crc = crc32(data);
+  // 3) تحويل البايتات المشفرة إلى Base64
+  let binStr = String.fromCharCode.apply(null, encryptedBytes);
+  let base64 = btoa(binStr);
+
+  // 4) تحويل Base64 إلى بايتات (ASCII)
+  let base64Bytes = textToBytes(base64);
+
+  const length = base64Bytes.length;
+  const crc = crc32(base64Bytes);
 
   const header = intToBytes32(length).concat(intToBytes32(length));
   const crcBytes = intToBytes32(crc);
 
-  let allBytes = header.concat(crcBytes, data);
+  let allBytes = header.concat(crcBytes, base64Bytes);
 
   while (allBytes.length % 3 !== 0) allBytes.push(0);
 
@@ -198,6 +203,10 @@ function encodeToImage() {
 /* ===================== SAVE ===================== */
 function saveImage() {
   const canvas = document.getElementById("pointCanvas");
+  if (!canvas.width || !canvas.height) {
+    alert("لا توجد صورة لحفظها.");
+    return;
+  }
   const url = canvas.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;
@@ -240,21 +249,40 @@ function decodeFromImage() {
     }
 
     const length = len1;
-
     const crcStored = bytesToInt32(bytes[8], bytes[9], bytes[10], bytes[11]);
 
-    const encrypted = bytes.slice(12, 12 + length);
+    const payload = bytes.slice(12, 12 + length);
+    if (payload.length < length) {
+      alert("البيانات ناقصة.");
+      return;
+    }
 
-    const crcCalc = crc32(encrypted);
+    const crcCalc = crc32(payload);
     if (crcCalc !== crcStored) {
       alert("CRC غير مطابق – الصورة تالفة أو المفتاح خاطئ.");
       return;
     }
 
-    const decrypted = xorBytesWithKey(encrypted, key32);
+    // payload = Base64 bytes
+    const base64 = bytesToText(payload);
 
-    const base64 = bytesToText(decrypted);
-    const text = decodeURIComponent(escape(atob(base64)));
+    // Base64 → encrypted bytes
+    let binStr;
+    try {
+      binStr = atob(base64);
+    } catch (e) {
+      alert("Base64 غير صالح – ربما المفتاح خاطئ.");
+      return;
+    }
+
+    const encryptedBytes = [];
+    for (let i = 0; i < binStr.length; i++) {
+      encryptedBytes.push(binStr.charCodeAt(i));
+    }
+
+    // XOR بالمفتاح لاستعادة النص الأصلي
+    const plainBytes = xorBytesWithKey(encryptedBytes, key32);
+    const text = bytesToText(plainBytes);
 
     document.getElementById("outputText").textContent = text;
   };
