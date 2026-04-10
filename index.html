@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>ALM PointImage – تحويل النص إلى صورة نقاط</title>
+<title>ALM PointImage – شبكة بكسلات</title>
 
 <style>
 body {
@@ -59,37 +59,29 @@ textarea, input[type="file"] {
   min-height: 80px;
   white-space: pre-wrap;
 }
-.small {
-  font-size: 13px;
-  color: #666;
-  margin-top: 5px;
-  text-align: center;
-}
 </style>
 </head>
 
 <body>
 
-<header>ALM PointImage – تمثيل النص كصورة نقاط</header>
+<header>ALM PointImage – شبكة بكسلات</header>
 
 <div class="container">
 
   <h3>1) تحويل النص إلى صورة نقاط</h3>
-  <textarea id="inputText" rows="6" placeholder="اكتب نصًا أو الصق جزءًا من كتاب هنا..."></textarea>
+  <textarea id="inputText" rows="6" placeholder="اكتب نصًا هنا..."></textarea>
   <button onclick="encodeToImage()">تحويل إلى صورة نقاط</button>
 
   <div id="canvasWrapper">
     <canvas id="pointCanvas"></canvas>
-    <div class="small">الصورة الناتجة تمثل النص كنقاط بكسلية.</div>
-    <button onclick="saveImage()">حفظ الصورة في المعرض (ملف PNG)</button>
+    <button onclick="saveImage()">حفظ الصورة (PNG)</button>
   </div>
 
   <hr>
 
   <h3>2) فك التشفير من صورة نقاط</h3>
-  <label>اختر صورة (PNG) تم توليدها من النظام:</label>
-  <input type="file" id="imageInput" accept="image/*">
-  <button onclick="decodeFromImage()">فك التشفير من الصورة</button>
+  <input type="file" id="imageInput" accept="image/png">
+  <button onclick="decodeFromImage()">فك التشفير</button>
 
   <h4>النص المستعاد:</h4>
   <div id="outputText"></div>
@@ -97,19 +89,27 @@ textarea, input[type="file"] {
 </div>
 
 <script>
-// ترميز النص إلى بايتات (UTF-8)
+/* ===================== CRC32 ===================== */
+function crc32(bytes) {
+  let crc = ~0;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+    }
+  }
+  return (~crc) >>> 0;
+}
+
+/* ===================== UTF-8 ===================== */
 function textToBytes(str) {
-  const encoder = new TextEncoder();
-  return Array.from(encoder.encode(str));
+  return Array.from(new TextEncoder().encode(str));
 }
-
-// فك البايتات إلى نص (UTF-8)
 function bytesToText(bytes) {
-  const decoder = new TextDecoder();
-  return decoder.decode(new Uint8Array(bytes));
+  return new TextDecoder().decode(new Uint8Array(bytes));
 }
 
-// تحويل عدد صحيح 32-بت إلى 4 بايت (Big-endian)
+/* ===================== 32-bit helpers ===================== */
 function intToBytes32(n) {
   return [
     (n >>> 24) & 0xFF,
@@ -118,33 +118,37 @@ function intToBytes32(n) {
     n & 0xFF
   ];
 }
-
-// تحويل 4 بايت إلى عدد 32-بت (Big-endian)
 function bytesToInt32(b0, b1, b2, b3) {
   return ((b0 << 24) >>> 0) | (b1 << 16) | (b2 << 8) | b3;
 }
 
-// ترميز النص إلى صورة نقاط
+/* ===================== ENCODE ===================== */
 function encodeToImage() {
-  const text = document.getElementById("inputText").value || "";
+  const text = document.getElementById("inputText").value;
   if (!text.trim()) {
-    alert("الرجاء إدخال نص أولاً.");
+    alert("أدخل نصًا أولاً.");
     return;
   }
 
-  // 1) نص → بايتات
-  const dataBytes = textToBytes(text);
-  const length = dataBytes.length;
+  let data = textToBytes(text);
+  const length = data.length;
 
-  // 2) إضافة رأس (4 بايت لطول البيانات)
-  const headerBytes = intToBytes32(length);
-  const allBytes = headerBytes.concat(dataBytes);
+  // CRC
+  const crc = crc32(data);
+  const crcBytes = intToBytes32(crc);
 
-  // 3) كل بكسل يحمل 3 بايت (R,G,B) – A ثابت 255
+  // Header: length (4 bytes) + length (4 bytes)
+  const header = intToBytes32(length).concat(intToBytes32(length));
+
+  // Combine: header + crc + data
+  let allBytes = header.concat(crcBytes, data);
+
+  // Padding to multiple of 3
+  while (allBytes.length % 3 !== 0) allBytes.push(0);
+
   const bytesPerPixel = 3;
-  const totalPixels = Math.ceil(allBytes.length / bytesPerPixel);
+  const totalPixels = allBytes.length / bytesPerPixel;
 
-  // نختار عرض ثابت مثلاً 256 بكسل
   const width = 256;
   const height = Math.ceil(totalPixels / width);
 
@@ -154,32 +158,24 @@ function encodeToImage() {
   const ctx = canvas.getContext("2d");
 
   const imageData = ctx.createImageData(width, height);
-  const data = imageData.data;
+  const px = imageData.data;
 
-  let byteIndex = 0;
+  let bi = 0;
   for (let i = 0; i < totalPixels; i++) {
-    const pixelIndex = i * 4; // RGBA
-    const r = allBytes[byteIndex++] || 0;
-    const g = allBytes[byteIndex++] || 0;
-    const b = allBytes[byteIndex++] || 0;
-
-    data[pixelIndex]     = r;
-    data[pixelIndex + 1] = g;
-    data[pixelIndex + 2] = b;
-    data[pixelIndex + 3] = 255; // Alpha
+    const p = i * 4;
+    px[p]     = allBytes[bi++] || 0;
+    px[p + 1] = allBytes[bi++] || 0;
+    px[p + 2] = allBytes[bi++] || 0;
+    px[p + 3] = 255;
   }
 
   ctx.putImageData(imageData, 0, 0);
-  alert(`تم توليد صورة نقاط بنجاح.\nالأبعاد: ${width} × ${height}`);
+  alert("تم إنشاء صورة نقاط بنجاح.");
 }
 
-// حفظ الصورة كـ PNG
+/* ===================== SAVE ===================== */
 function saveImage() {
   const canvas = document.getElementById("pointCanvas");
-  if (!canvas.width || !canvas.height) {
-    alert("لا توجد صورة حالية للحفظ.");
-    return;
-  }
   const url = canvas.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;
@@ -187,12 +183,11 @@ function saveImage() {
   a.click();
 }
 
-// فك التشفير من صورة
+/* ===================== DECODE ===================== */
 function decodeFromImage() {
-  const fileInput = document.getElementById("imageInput");
-  const file = fileInput.files[0];
+  const file = document.getElementById("imageInput").files[0];
   if (!file) {
-    alert("الرجاء اختيار صورة أولاً.");
+    alert("اختر صورة PNG أولاً.");
     return;
   }
 
@@ -204,35 +199,42 @@ function decodeFromImage() {
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
     const bytes = [];
     for (let i = 0; i < data.length; i += 4) {
-      bytes.push(data[i]);     // R
-      bytes.push(data[i + 1]); // G
-      bytes.push(data[i + 2]); // B
+      bytes.push(data[i], data[i+1], data[i+2]);
     }
 
-    if (bytes.length < 4) {
-      alert("الصورة لا تحتوي بيانات كافية.");
+    // Read header
+    const len1 = bytesToInt32(bytes[0], bytes[1], bytes[2], bytes[3]);
+    const len2 = bytesToInt32(bytes[4], bytes[5], bytes[6], bytes[7]);
+
+    if (len1 !== len2) {
+      alert("خطأ في الرأس – الصورة تالفة.");
       return;
     }
 
-    const length = bytesToInt32(bytes[0], bytes[1], bytes[2], bytes[3]);
-    const payload = bytes.slice(4, 4 + length);
+    const length = len1;
+
+    // CRC
+    const crcStored = bytesToInt32(bytes[8], bytes[9], bytes[10], bytes[11]);
+
+    const payload = bytes.slice(12, 12 + length);
 
     if (payload.length < length) {
-      alert("البيانات ناقصة أو الصورة تالفة.");
+      alert("البيانات ناقصة.");
+      return;
+    }
+
+    const crcCalc = crc32(payload);
+    if (crcCalc !== crcStored) {
+      alert("CRC غير مطابق – الصورة تالفة.");
       return;
     }
 
     const text = bytesToText(payload);
     document.getElementById("outputText").textContent = text;
-  };
-
-  img.onerror = () => {
-    alert("تعذر قراءة الصورة.");
   };
 
   img.src = URL.createObjectURL(file);
