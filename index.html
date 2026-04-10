@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔐 ALM CryptoFile – ملفاتك في صورة مشفرة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(145deg, #f4f9f8 0%, #e2f0ed 100%);
+      min-height: 100vh;
+      padding: 24px 16px 40px;
+      color: #1a2e2a;
+    }
+    .main-card {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 36px;
+      box-shadow: 0 20px 40px -8px rgba(11, 163, 127, 0.18);
+      padding: 28px 30px 36px;
+      border: 1px solid rgba(11, 163, 127, 0.2);
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0b7a5e;
+      border-bottom: 3px solid #0BA37F;
+      padding-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 span { background: #0BA37F; color: white; font-size: 1rem; padding: 4px 12px; border-radius: 40px; }
+    h2 { font-size: 1.3rem; font-weight: 600; margin: 24px 0 12px; color: #0d5c4a; }
+    .warning-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 20px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      color: #856404;
+      font-weight: 500;
+    }
+    .key-section {
+      background: #e9f4f0;
+      padding: 18px 20px;
+      border-radius: 24px;
+      margin: 20px 0;
+    }
+    .key-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .key-input-wrapper input {
+      flex: 1 1 260px;
+      padding: 14px 18px;
+      border: 2px solid #bcd9d1;
+      border-radius: 48px;
+      font-size: 1.2rem;
+      font-family: monospace;
+      text-transform: uppercase;
+    }
+    .btn {
+      background: #0BA37F;
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 60px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Cairo', sans-serif;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 16px -6px rgba(11, 163, 127, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-secondary { background: #2c4c44; }
+    .btn-outline { background: transparent; color: #0b5e4a; border: 2px solid #0BA37F; box-shadow: none; }
+    .btn-copy { background: #5f6c7a; }
+    .btn:hover { transform: translateY(-3px); filter: brightness(1.05); }
+    .drop-zone {
+      border: 2px dashed #0BA37F;
+      border-radius: 28px;
+      padding: 32px 18px;
+      text-align: center;
+      background: #f6fbfa;
+      margin: 20px 0;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .drop-zone.drag-over { background: #d4f0e8; border-color: #087a5c; }
+    .file-info { margin-top: 8px; color: #1e4f41; font-size: 0.9rem; }
+    .canvas-container {
+      background: #ffffffd9;
+      border-radius: 28px;
+      padding: 24px;
+      margin: 30px 0;
+      text-align: center;
+      border: 1px solid #d2ebe4;
+    }
+    canvas {
+      max-width: 100%;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      image-rendering: crisp-edges;
+    }
+    .output-area {
+      background: #f0f7f5;
+      border-radius: 24px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .flex-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a3a32;
+      color: white;
+      padding: 12px 32px;
+      border-radius: 80px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    textarea {
+      width: 100%;
+      padding: 16px;
+      border-radius: 20px;
+      border: 2px solid #bcd9d1;
+      font-family: 'Cairo', sans-serif;
+    }
+    details { margin-top: 16px; }
+    summary { cursor: pointer; color: #0b5e4a; font-weight: 600; }
+    .restore-link {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: #e9f4f0;
+      border-radius: 40px;
+      text-decoration: none;
+      color: #0b5e4a;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="main-card">
+  <h1>🔐 ALM CryptoFile <span>v1.0</span></h1>
+  <p style="color: #2a6858; margin-bottom: 8px;">حوّل أي ملف (نص، PDF، Word) إلى صورة PNG مشفرة واستعده بدقة</p>
+
+  <div class="warning-box">
+    ⚠️ تنبيه: عند مشاركة الصورة عبر واتساب، أرسلها <strong>كمستند (Document)</strong> وليس كصورة. أو استخدم خيار "نسخ Base64" للمشاركة الآمنة.
+  </div>
+
+  <div id="liveToast" class="toast-msg">✨ جاهز</div>
+
+  <!-- مفتاح المستخدم -->
+  <div class="key-section">
+    <div class="key-input-wrapper">
+      <label>🔐 مفتاح 32‑bit (8 خانات Hex):</label>
+      <input id="userKey" type="text" value="A1B2C3D4" placeholder="A1B2C3D4" maxlength="8" autocomplete="off">
+    </div>
+    <div id="keyPreview" style="margin-top:8px; opacity:0.8;">القيمة: 0xA1B2C3D4</div>
+  </div>
+
+  <!-- القسم 1: تحويل ملف إلى صورة -->
+  <h2>📂 1. اختر ملفًا لتحويله إلى صورة</h2>
+  
+  <!-- تبويبات نوع الملف -->
+  <div class="flex-buttons">
+    <button class="btn btn-outline" id="tabText" style="flex:1;">📝 نص</button>
+    <button class="btn btn-outline" id="tabPDF" style="flex:1;">📄 PDF</button>
+    <button class="btn btn-outline" id="tabWord" style="flex:1;">📃 Word</button>
+  </div>
+
+  <!-- منطقة النص -->
+  <div id="textInputArea">
+    <textarea id="inputText" rows="5" placeholder="اكتب النص هنا... (يدعم العربية والإنجليزية والإيموجي)"></textarea>
+  </div>
+
+  <!-- منطقة رفع الملفات (PDF/Word) -->
+  <div id="fileInputArea" style="display:none;">
+    <div class="drop-zone" id="fileDropZone">
+      <div style="font-size:2.8rem;">📁</div>
+      <div id="dropzoneText">اسحب ملف PDF أو Word هنا أو انقر للاختيار</div>
+      <div id="selectedFileInfo" class="file-info">لم يتم اختيار ملف</div>
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none;">
+    </div>
+  </div>
+
+  <button class="btn" id="encodeBtn" style="width:100%; margin-top:12px;">🎨 تحويل إلى صورة مشفرة</button>
+
+  <!-- عرض الصورة الناتجة -->
+  <div class="canvas-container" id="canvasWrapper" style="display:none;">
+    <canvas id="cryptoCanvas"></canvas>
+    <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; justify-content:center;">
+      <button class="btn btn-outline" id="saveImageBtn">💾 حفظ PNG</button>
+      <button class="btn btn-copy" id="copyBase64Btn">📋 نسخ Base64</button>
+    </div>
+    <div id="imageSizeInfo" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- استعادة من Base64 يدوي -->
+  <details>
+    <summary>📎 أو الصق Base64 مشفر لاستعادة الملف</summary>
+    <textarea id="base64PasteArea" placeholder="الصق النص المشفر هنا..." rows="3"></textarea>
+    <button class="btn btn-secondary" id="decodeFromBase64Btn">🔓 استعادة الملف من Base64</button>
+  </details>
+
+  <hr>
+
+  <!-- القسم 2: استعادة الملف من صورة -->
+  <h2>🖼️ 2. استعادة الملف من صورة</h2>
+  <div class="drop-zone" id="imageDropZone">
+    <div style="font-size:2.4rem;">🖼️</div>
+    <div>اسحب صورة PNG (منشأة بواسطة الأداة) أو انقر للاختيار</div>
+    <div id="imageFileInfo" class="file-info">اختر صورة لاستخراج الملف الأصلي</div>
+    <input type="file" id="imageInput" accept="image/png" style="display:none;">
+  </div>
+  <button class="btn btn-secondary" id="decodeFromImageBtn">🔍 فك التشفير واستعادة الملف</button>
+
+  <!-- نتيجة الاستعادة -->
+  <div class="output-area" id="restoreResult" style="display:none;">
+    <h3>✅ تمت الاستعادة بنجاح</h3>
+    <div id="fileDetails"></div>
+    <a href="#" id="downloadLink" class="restore-link" download>⬇️ تحميل الملف المستعاد</a>
+    <div id="textPreview" style="margin-top:16px; background:white; padding:16px; border-radius:16px; white-space:pre-wrap; display:none;"></div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    // ---------- عناصر DOM ----------
+    const userKeyInput = document.getElementById('userKey');
+    const keyPreview = document.getElementById('keyPreview');
+    const textInputArea = document.getElementById('textInputArea');
+    const fileInputArea = document.getElementById('fileInputArea');
+    const tabText = document.getElementById('tabText');
+    const tabPDF = document.getElementById('tabPDF');
+    const tabWord = document.getElementById('tabWord');
+    const inputText = document.getElementById('inputText');
+    const fileInput = document.getElementById('fileInput');
+    const fileDropZone = document.getElementById('fileDropZone');
+    const dropzoneText = document.getElementById('dropzoneText');
+    const selectedFileInfo = document.getElementById('selectedFileInfo');
+    const encodeBtn = document.getElementById('encodeBtn');
+    const canvas = document.getElementById('cryptoCanvas');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const saveImageBtn = document.getElementById('saveImageBtn');
+    const copyBase64Btn = document.getElementById('copyBase64Btn');
+    const imageSizeInfo = document.getElementById('imageSizeInfo');
+    const base64PasteArea = document.getElementById('base64PasteArea');
+    const decodeFromBase64Btn = document.getElementById('decodeFromBase64Btn');
+    const imageInput = document.getElementById('imageInput');
+    const imageFileInfo = document.getElementById('imageFileInfo');
+    const imageDropZone = document.getElementById('imageDropZone');
+    const decodeFromImageBtn = document.getElementById('decodeFromImageBtn');
+    const restoreResult = document.getElementById('restoreResult');
+    const fileDetails = document.getElementById('fileDetails');
+    const downloadLink = document.getElementById('downloadLink');
+    const textPreview = document.getElementById('textPreview');
+    const toast = document.getElementById('liveToast');
+
+    // متغيرات الحالة
+    let currentMode = 'text'; // 'text', 'pdf', 'word'
+    let selectedFile = null;
+    let lastEncodedBase64 = '';
+    let lastMimeType = '';
+    let lastFileName = '';
+
+    // ---------- دوال مساعدة ----------
+    function showToast(msg, isGood = true) {
+      toast.style.opacity = '1';
+      toast.textContent = msg;
+      toast.style.background = isGood ? '#0b7a5e' : '#b13e3e';
+      setTimeout(() => toast.style.opacity = '0', 3000);
+    }
+
+    function updateKeyPreview() {
+      const keyVal = parseKey32(userKeyInput.value);
+      keyPreview.textContent = `القيمة: 0x${keyVal.toString(16).toUpperCase().padStart(8, '0')}`;
+    }
+    userKeyInput.addEventListener('input', updateKeyPreview);
+    updateKeyPreview();
+
+    // Base64 آمن مع تقسيم
+    function uint8ArrayToBase64(bytes) {
+      const chunkSize = 0x8000;
+      const chunks = [];
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        let binary = '';
+        for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
+        chunks.push(binary);
+      }
+      return btoa(chunks.join(''));
+    }
+
+    function base64ToUint8Array(base64) {
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    // ---------- التشفير والمفتاح ----------
+    function parseKey32(hex) {
+      hex = hex.replace(/[^0-9A-Fa-f]/g, '');
+      if (hex.length !== 8) return 0xA1B2C3D4;
+      return parseInt(hex, 16) >>> 0;
+    }
+
+    function xorBytesWithKey(bytes, key32) {
+      const k = [(key32>>>24)&0xFF, (key32>>>16)&0xFF, (key32>>>8)&0xFF, key32&0xFF];
+      const res = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) res[i] = bytes[i] ^ k[i % 4];
+      return res;
+    }
+
+    function crc32(bytes) {
+      let crc = ~0;
+      for (let i = 0; i < bytes.length; i++) {
+        crc ^= bytes[i];
+        for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+      }
+      return (~crc) >>> 0;
+    }
+
+    function intToBytes32(n) {
+      return [(n>>>24)&0xFF, (n>>>16)&0xFF, (n>>>8)&0xFF, n&0xFF];
+    }
+    function bytesToInt32(b0,b1,b2,b3) {
+      return ((b0<<24)>>>0) | (b1<<16) | (b2<<8) | b3;
+    }
+
+    // ---------- تغيير التبويبات ----------
+    function setMode(mode) {
+      currentMode = mode;
+      tabText.style.background = mode === 'text' ? '#0BA37F' : 'transparent';
+      tabText.style.color = mode === 'text' ? 'white' : '#0b5e4a';
+      tabPDF.style.background = mode === 'pdf' ? '#0BA37F' : 'transparent';
+      tabPDF.style.color = mode === 'pdf' ? 'white' : '#0b5e4a';
+      tabWord.style.background = mode === 'word' ? '#0BA37F' : 'transparent';
+      tabWord.style.color = mode === 'word' ? 'white' : '#0b5e4a';
+      
+      if (mode === 'text') {
+        textInputArea.style.display = 'block';
+        fileInputArea.style.display = 'none';
+        encodeBtn.textContent = '🎨 تحويل النص إلى صورة مشفرة';
+      } else {
+        textInputArea.style.display = 'none';
+        fileInputArea.style.display = 'block';
+        const typeName = mode === 'pdf' ? 'PDF' : 'Word';
+        dropzoneText.textContent = `اسحب ملف ${typeName} هنا أو انقر للاختيار`;
+        fileInput.accept = mode === 'pdf' ? '.pdf,application/pdf' : '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        encodeBtn.textContent = `🎨 تحويل ملف ${typeName} إلى صورة مشفرة`;
+      }
+      selectedFile = null;
+      selectedFileInfo.textContent = 'لم يتم اختيار ملف';
+    }
+
+    tabText.onclick = () => setMode('text');
+    tabPDF.onclick = () => setMode('pdf');
+    tabWord.onclick = () => setMode('word');
+
+    // ---------- التعامل مع رفع الملفات ----------
+    function handleFileSelect(file) {
+      if (!file) return;
+      selectedFile = file;
+      const sizeKB = (file.size / 1024).toFixed(1);
+      selectedFileInfo.textContent = `📄 ${file.name} (${sizeKB} KB)`;
+    }
+
+    fileDropZone.addEventListener('click', () => fileInput.click());
+    fileDropZone.addEventListener('dragover', e => { e.preventDefault(); fileDropZone.classList.add('drag-over'); });
+    fileDropZone.addEventListener('dragleave', () => fileDropZone.classList.remove('drag-over'));
+    fileDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      fileDropZone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      if (files.length) {
+        fileInput.files = files;
+        handleFileSelect(files[0]);
+      }
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFileSelect(fileInput.files[0]);
+    });
+
+    // السحب للصورة (فك التشفير)
+    function setupImageDropZone() {
+      imageDropZone.addEventListener('click', () => imageInput.click());
+      imageDropZone.addEventListener('dragover', e => { e.preventDefault(); imageDropZone.classList.add('drag-over'); });
+      imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('drag-over'));
+      imageDropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        imageDropZone.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length) {
+          imageInput.files = files;
+          imageFileInfo.textContent = `🖼️ ${files[0].name} (${(files[0].size/1024).toFixed(1)} KB)`;
+        }
+      });
+      imageInput.addEventListener('change', () => {
+        if (imageInput.files.length) imageFileInfo.textContent = `🖼️ ${imageInput.files[0].name} (${(imageInput.files[0].size/1024).toFixed(1)} KB)`;
+      });
+    }
+    setupImageDropZone();
+
+    // ---------- تحويل الملف/النص إلى صورة ----------
+    async function encodeToImage() {
+      const key32 = parseKey32(userKeyInput.value);
+      let dataBytes, mimeType, fileName;
+
+      try {
+        if (currentMode === 'text') {
+          const text = inputText.value.trim();
+          if (!text) throw new Error('الرجاء إدخال نص');
+          dataBytes = new TextEncoder().encode(text);
+          mimeType = 'text/plain';
+          fileName = 'message.txt';
+        } else {
+          if (!selectedFile) throw new Error(`الرجاء اختيار ملف ${currentMode === 'pdf' ? 'PDF' : 'Word'}`);
+          const buffer = await selectedFile.arrayBuffer();
+          dataBytes = new Uint8Array(buffer);
+          mimeType = selectedFile.type || (currentMode === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+          fileName = selectedFile.name;
+        }
+
+        showToast('⏳ جاري التشفير وإنشاء الصورة...');
+        
+        // 1) تشفير XOR
+        const encrypted = xorBytesWithKey(dataBytes, key32);
+        
+        // 2) Base64
+        const base64 = uint8ArrayToBase64(encrypted);
+        lastEncodedBase64 = base64;
+        lastMimeType = mimeType;
+        lastFileName = fileName;
+        
+        // 3) تحضير الـ payload: طول اسم الملف (2بايت) + اسم الملف + mime + base64
+        const nameBytes = new TextEncoder().encode(fileName);
+        const nameLenBytes = new Uint8Array([(nameBytes.length >> 8) & 0xFF, nameBytes.length & 0xFF]);
+        const mimeBytes = new TextEncoder().encode(mimeType);
+        const mimeLenBytes = new Uint8Array([(mimeBytes.length >> 8) & 0xFF, mimeBytes.length & 0xFF]);
+        const base64Bytes = new TextEncoder().encode(base64);
+        
+        const payload = new Uint8Array(2 + nameBytes.length + 2 + mimeBytes.length + base64Bytes.length);
+        let offset = 0;
+        payload.set(nameLenBytes, offset); offset += 2;
+        payload.set(nameBytes, offset); offset += nameBytes.length;
+        payload.set(mimeLenBytes, offset); offset += 2;
+        payload.set(mimeBytes, offset); offset += mimeBytes.length;
+        payload.set(base64Bytes, offset);
+        
+        const length = payload.length;
+        const crc = crc32(payload);
+        
+        let allBytes = [
+          ...intToBytes32(length), ...intToBytes32(length),
+          ...intToBytes32(crc),
+          ...payload
+        ];
+        while (allBytes.length % 3 !== 0) allBytes.push(0);
+        
+        // رسم
+        const width = 256;
+        const height = Math.ceil(allBytes.length / 3 / width);
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.createImageData(width, height);
+        const px = imgData.data;
+        let byteIdx = 0;
+        for (let i = 0; i < width * height; i++) {
+          const p = i * 4;
+          px[p]   = allBytes[byteIdx++] || 0;
+          px[p+1] = allBytes[byteIdx++] || 0;
+          px[p+2] = allBytes[byteIdx++] || 0;
+          px[p+3] = 255;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        
+        canvasWrapper.style.display = 'block';
+        imageSizeInfo.textContent = `📏 ${width}×${height} | حجم الملف الأصلي: ${(dataBytes.length/1024).toFixed(1)} KB`;
+        showToast('🎨 تم إنشاء الصورة المشفرة بنجاح!');
+      } catch (e) {
+        showToast('❌ فشل: ' + e.message, false);
+        console.error(e);
+      }
+    }
+
+    // حفظ الصورة
+    function saveImage() {
+      if (!canvas.width) { showToast('لا توجد صورة', false); return; }
+      const a = document.createElement('a');
+      a.download = `cryptofile_${Date.now()}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      showToast('💾 تم حفظ الصورة (أرسلها كمستند)');
+    }
+
+    // نسخ Base64
+    function copyBase64() {
+      if (!lastEncodedBase64) { showToast('لا يوجد بيانات مشفرة', false); return; }
+      navigator.clipboard?.writeText(lastEncodedBase64).then(() => showToast('📋 تم نسخ Base64')).catch(() => showToast('تعذر النسخ', false));
+    }
+
+    // ---------- فك التشفير من Base64 ----------
+    function decodeFromBase64(base64, key32) {
+      const encrypted = base64ToUint8Array(base64);
+      const decrypted = xorBytesWithKey(encrypted, key32);
+      return decrypted;
+    }
+
+    // عرض نتيجة الاستعادة
+    function displayRestoredFile(bytes, fileName, mimeType) {
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadLink.download = fileName;
+      fileDetails.textContent = `📄 ${fileName} (${(bytes.length/1024).toFixed(1)} KB) • ${mimeType}`;
+      
+      // معاينة النص إذا كان نوعه نصي
+      if (mimeType.startsWith('text/') || fileName.endsWith('.txt')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          textPreview.style.display = 'block';
+          textPreview.textContent = reader.result;
+        };
+        reader.readAsText(blob);
+      } else {
+        textPreview.style.display = 'none';
+      }
+      
+      restoreResult.style.display = 'block';
+    }
+
+    // فك من صورة
+    async function decodeFromImage() {
+      const file = imageInput.files[0];
+      if (!file) { showToast('اختر صورة PNG', false); return; }
+      const key32 = parseKey32(userKeyInput.value);
+      showToast('🔍 جاري فك التشفير...');
+      
+      try {
+        const img = await createImageBitmap(file);
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0,0,c.width,c.height).data;
+        
+        const bytes = [];
+        for (let i=0; i<data.length; i+=4) bytes.push(data[i], data[i+1], data[i+2]);
+        
+        const len1 = bytesToInt32(bytes[0],bytes[1],bytes[2],bytes[3]);
+        const len2 = bytesToInt32(bytes[4],bytes[5],bytes[6],bytes[7]);
+        if (len1 !== len2) throw new Error('رأس الصورة تالف');
+        
+        const crcStored = bytesToInt32(bytes[8],bytes[9],bytes[10],bytes[11]);
+        const payload = bytes.slice(12, 12+len1);
+        if (crc32(payload) !== crcStored) throw new Error('CRC غير متطابق – الصورة معدّلة');
+        
+        // فك payload
+        let idx = 0;
+        const nameLen = (payload[idx]<<8) | payload[idx+1]; idx+=2;
+        const nameBytes = payload.slice(idx, idx+nameLen); idx+=nameLen;
+        const fileName = new TextDecoder().decode(nameBytes);
+        
+        const mimeLen = (payload[idx]<<8) | payload[idx+1]; idx+=2;
+        const mimeBytes = payload.slice(idx, idx+mimeLen); idx+=mimeLen;
+        const mimeType = new TextDecoder().decode(mimeBytes);
+        
+        const base64Bytes = payload.slice(idx);
+        const base64 = new TextDecoder().decode(base64Bytes);
+        
+        const fileBytes = decodeFromBase64(base64, key32);
+        displayRestoredFile(fileBytes, fileName, mimeType);
+        showToast('✅ تم استعادة الملف بنجاح!');
+      } catch (e) {
+        showToast('❌ فشل: ' + e.message, false);
+        console.error(e);
+      }
+    }
+
+    // فك من Base64 يدوي
+    function decodeFromBase64Manual() {
+      const base64 = base64PasteArea.value.trim();
+      if (!base64) { showToast('الصق Base64', false); return; }
+      const key32 = parseKey32(userKeyInput.value);
+      try {
+        const fileBytes = decodeFromBase64(base64, key32);
+        // بما أننا لا نملك اسم الملف الأصلي أو MIME من Base64 فقط، نضع افتراضات
+        displayRestoredFile(fileBytes, 'restored_file', 'application/octet-stream');
+        showToast('✅ تم استعادة البيانات من Base64');
+      } catch (e) {
+        showToast('❌ فشل: ' + e.message, false);
+      }
+    }
+
+    // ربط الأحداث
+    encodeBtn.onclick = encodeToImage;
+    saveImageBtn.onclick = saveImage;
+    copyBase64Btn.onclick = copyBase64;
+    decodeFromImageBtn.onclick = decodeFromImage;
+    decodeFromBase64Btn.onclick = decodeFromBase64Manual;
+
+    setMode('text');
+    showToast('👋 اختر نوع الملف (نص، PDF، Word) ثم حوّله');
+  })();
+</script>
+</body>
+</html>
