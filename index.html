@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📝 ALM PointImage v4.0 – نص إلى صورة بمفتاح</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(145deg, #f4f9f8 0%, #e2f0ed 100%);
+      min-height: 100vh;
+      padding: 24px 16px 40px;
+      color: #1a2e2a;
+    }
+    .main-card {
+      max-width: 880px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 36px;
+      box-shadow: 0 20px 40px -8px rgba(11, 163, 127, 0.18);
+      padding: 28px 30px 36px;
+      border: 1px solid rgba(11, 163, 127, 0.2);
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #0b7a5e;
+      border-bottom: 3px solid #0BA37F;
+      padding-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 span { background: #0BA37F; color: white; font-size: 1rem; padding: 4px 12px; border-radius: 40px; }
+    h2 { font-size: 1.35rem; font-weight: 600; margin: 28px 0 12px; color: #0d5c4a; }
+    .warning-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 20px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      color: #856404;
+      font-weight: 500;
+    }
+    .key-section {
+      background: #e9f4f0;
+      padding: 18px 20px;
+      border-radius: 24px;
+      margin: 20px 0;
+    }
+    .key-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .key-input-wrapper input {
+      flex: 1 1 260px;
+      padding: 14px 18px;
+      border: 2px solid #bcd9d1;
+      border-radius: 48px;
+      font-size: 1.2rem;
+      font-family: monospace;
+      text-transform: uppercase;
+    }
+    .key-hint { font-size: 0.9rem; color: #0b5e4a; margin-top: 8px; }
+    .btn {
+      background: #0BA37F;
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 60px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Cairo', sans-serif;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 8px 16px -6px rgba(11, 163, 127, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-secondary { background: #2c4c44; }
+    .btn-outline { background: transparent; color: #0b5e4a; border: 2px solid #0BA37F; box-shadow: none; }
+    .btn-copy { background: #5f6c7a; }
+    .btn:hover { transform: translateY(-3px); filter: brightness(1.05); }
+    textarea {
+      width: 100%;
+      padding: 18px;
+      border: 2px solid #bcd9d1;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-family: 'Cairo', sans-serif;
+      background: white;
+      margin: 16px 0;
+      resize: vertical;
+    }
+    .canvas-container {
+      background: #ffffffd9;
+      border-radius: 28px;
+      padding: 24px;
+      margin: 30px 0;
+      text-align: center;
+      border: 1px solid #d2ebe4;
+    }
+    canvas {
+      max-width: 100%;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      image-rendering: crisp-edges;
+      border: 1px solid #c0ddd3;
+    }
+    .output-area {
+      background: #f0f7f5;
+      border-radius: 24px;
+      padding: 20px;
+      margin: 20px 0;
+      border: 1px solid #c0ddd3;
+    }
+    #outputText {
+      background: white;
+      padding: 16px;
+      border-radius: 16px;
+      min-height: 100px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: monospace;
+      font-size: 1rem;
+    }
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a3a32;
+      color: white;
+      padding: 12px 32px;
+      border-radius: 80px;
+      box-shadow: 0 18px 30px -6px #0f2f27;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .drop-zone {
+      border: 2px dashed #0BA37F;
+      border-radius: 28px;
+      padding: 28px;
+      text-align: center;
+      background: #f6fbfa;
+      margin: 20px 0;
+      cursor: pointer;
+    }
+    .drop-zone.drag-over { background: #d4f0e8; border-color: #087a5c; }
+    .file-info { margin-top: 8px; color: #1e4f41; }
+    details { margin-top: 16px; }
+    summary { cursor: pointer; color: #0b5e4a; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="main-card">
+  <h1>📝 ALM PointImage <span>v4.0</span></h1>
+  <p style="margin-bottom: 6px; color: #2a6858;">تحويل النص إلى صورة نقاط مشفرة بمفتاح 32‑bit</p>
+
+  <div class="warning-box">
+    ⚠️ تنبيه مهم: عند مشاركة الصورة عبر واتساب أو تطبيقات التواصل، يجب إرسالها <strong>كـ "مستند" (Document)</strong> وليس كصورة عادية، وإلا سيتم ضغطها وتلف البيانات.<br>
+    ✅ استخدم خيار "نسخ النص المشفر" كبديل آمن للمشاركة.
+  </div>
+
+  <div id="liveToast" class="toast-msg">✨ جاهز</div>
+
+  <!-- مفتاح المستخدم -->
+  <div class="key-section">
+    <div class="key-input-wrapper">
+      <label>🔐 مفتاح 32‑bit (8 خانات Hex):</label>
+      <input id="userKey" type="text" value="A1B2C3D4" placeholder="A1B2C3D4" maxlength="8" autocomplete="off">
+    </div>
+    <div id="keyPreview" class="key-hint">القيمة العددية: 0xA1B2C3D4</div>
+  </div>
+
+  <!-- إدخال النص -->
+  <h2>✏️ 1. النص المراد تحويله</h2>
+  <textarea id="inputText" rows="6" placeholder="اكتب أي نص (عربي، إنجليزي، رموز، إيموجي...)"></textarea>
+  <button class="btn" id="encodeBtn" style="width:100%;">🎨 تحويل النص ➔ صورة نقاط</button>
+
+  <!-- منطقة عرض الصورة والخيارات -->
+  <div class="canvas-container" id="canvasWrapper" style="display:none;">
+    <canvas id="pointCanvas"></canvas>
+    <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; justify-content:center;">
+      <button class="btn btn-outline" id="saveImageBtn">💾 حفظ PNG</button>
+      <button class="btn btn-copy" id="copyBase64Btn">📋 نسخ النص المشفر</button>
+    </div>
+    <div id="imageSizeInfo" style="margin-top:12px; opacity:0.8;"></div>
+  </div>
+
+  <!-- خيار استيراد Base64 يدوي -->
+  <details>
+    <summary>📎 أو الصق النص المشفر (Base64) للاستعادة</summary>
+    <textarea id="base64PasteArea" placeholder="الصق النص المشفر هنا..." rows="3" style="width:100%; padding:12px; border-radius:20px; border:1px solid #ccc; margin-top:12px;"></textarea>
+    <button class="btn btn-secondary" id="decodeFromBase64Btn" style="margin-top:8px;">استعادة النص من النص المشفر</button>
+  </details>
+
+  <hr>
+
+  <!-- استعادة من صورة -->
+  <h2>🖼️ 2. استعادة النص من صورة</h2>
+  <div class="drop-zone" id="imageDropZone">
+    <div style="font-size:2.4rem;">🖼️</div>
+    <div>اسحب صورة PNG أو انقر للاختيار</div>
+    <div id="imageFileInfo" class="file-info">يجب أن تكون صورة تم إنشاؤها بواسطة الأداة</div>
+    <input type="file" id="imageInput" accept="image/png" style="display:none;">
+  </div>
+  <button class="btn btn-secondary" id="decodeFromImageBtn">🔓 فك التشفير من الصورة</button>
+
+  <!-- النص المستعاد -->
+  <div class="output-area">
+    <h3 style="margin-bottom:12px;">📄 النص المستعاد:</h3>
+    <div id="outputText"></div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    // ---------- عناصر DOM ----------
+    const userKeyInput = document.getElementById('userKey');
+    const keyPreview = document.getElementById('keyPreview');
+    const inputText = document.getElementById('inputText');
+    const canvas = document.getElementById('pointCanvas');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const imageInput = document.getElementById('imageInput');
+    const imageFileInfo = document.getElementById('imageFileInfo');
+    const outputText = document.getElementById('outputText');
+    const toast = document.getElementById('liveToast');
+    const base64PasteArea = document.getElementById('base64PasteArea');
+    const imageSizeInfo = document.getElementById('imageSizeInfo');
+
+    let lastEncodedBase64 = '';
+
+    // ---------- دوال مساعدة ----------
+    function showToast(msg, isGood = true) {
+      toast.style.opacity = '1';
+      toast.textContent = msg;
+      toast.style.background = isGood ? '#0b7a5e' : '#b13e3e';
+      setTimeout(() => toast.style.opacity = '0', 3000);
+    }
+
+    function updateKeyPreview() {
+      const keyVal = parseKey32(userKeyInput.value);
+      keyPreview.textContent = `القيمة العددية: 0x${keyVal.toString(16).toUpperCase().padStart(8, '0')}`;
+    }
+    userKeyInput.addEventListener('input', updateKeyPreview);
+    updateKeyPreview();
+
+    // ---------- Base64 آمن مع تقسيم (chunking) ----------
+    function uint8ArrayToBase64(bytes) {
+      const chunkSize = 0x8000; // 32KB
+      const chunks = [];
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        let binary = '';
+        for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
+        chunks.push(binary);
+      }
+      return btoa(chunks.join(''));
+    }
+
+    function base64ToUint8Array(base64) {
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    // ---------- تحويل نص وبايتات ----------
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+    function textToBytes(str) { return textEncoder.encode(str); }
+    function bytesToText(bytes) { return textDecoder.decode(bytes); }
+
+    // ---------- دوال المفتاح والتشفير ----------
+    function parseKey32(hex) {
+      hex = hex.replace(/[^0-9A-Fa-f]/g, '');
+      if (hex.length !== 8) return 0xA1B2C3D4;
+      return parseInt(hex, 16) >>> 0;
+    }
+
+    function xorBytesWithKey(bytes, key32) {
+      const k = [(key32>>>24)&0xFF, (key32>>>16)&0xFF, (key32>>>8)&0xFF, key32&0xFF];
+      const res = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) res[i] = bytes[i] ^ k[i % 4];
+      return res;
+    }
+
+    // CRC32
+    function crc32(bytes) {
+      let crc = ~0;
+      for (let i = 0; i < bytes.length; i++) {
+        crc ^= bytes[i];
+        for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+      }
+      return (~crc) >>> 0;
+    }
+
+    function intToBytes32(n) {
+      return [(n>>>24)&0xFF, (n>>>16)&0xFF, (n>>>8)&0xFF, n&0xFF];
+    }
+    function bytesToInt32(b0,b1,b2,b3) {
+      return ((b0<<24)>>>0) | (b1<<16) | (b2<<8) | b3;
+    }
+
+    // ---------- تحويل النص إلى صورة ----------
+    function encodeToImage() {
+      const key32 = parseKey32(userKeyInput.value);
+      const text = inputText.value;
+      if (!text.trim()) {
+        showToast('⚠️ الرجاء إدخال نص أولاً', false);
+        return;
+      }
+
+      try {
+        // 1) نص → بايتات UTF-8
+        const textBytes = textToBytes(text);
+        
+        // 2) XOR بالمفتاح
+        const encrypted = xorBytesWithKey(textBytes, key32);
+        
+        // 3) تحويل إلى Base64
+        const base64 = uint8ArrayToBase64(encrypted);
+        lastEncodedBase64 = base64;
+        
+        // 4) تجهيز payload (بايتات Base64)
+        const payload = textToBytes(base64);
+        const length = payload.length;
+        const crc = crc32(payload);
+        
+        // 5) بناء جميع البايتات مع الـ Header و CRC
+        let allBytes = [
+          ...intToBytes32(length), ...intToBytes32(length),
+          ...intToBytes32(crc),
+          ...payload
+        ];
+        while (allBytes.length % 3 !== 0) allBytes.push(0);
+        
+        // 6) رسم البكسلات
+        const width = 256;
+        const height = Math.ceil(allBytes.length / 3 / width);
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.createImageData(width, height);
+        const px = imgData.data;
+        let byteIdx = 0;
+        for (let i = 0; i < width * height; i++) {
+          const p = i * 4;
+          px[p]   = allBytes[byteIdx++] || 0;
+          px[p+1] = allBytes[byteIdx++] || 0;
+          px[p+2] = allBytes[byteIdx++] || 0;
+          px[p+3] = 255;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        
+        canvasWrapper.style.display = 'block';
+        const byteSize = textBytes.length;
+        imageSizeInfo.textContent = `📏 ${width}×${height} | حجم النص الأصلي: ${byteSize} بايت`;
+        showToast('🎨 تم تحويل النص إلى صورة نقاط!');
+      } catch (e) {
+        showToast('❌ فشل التحويل: ' + e.message, false);
+      }
+    }
+
+    // حفظ الصورة
+    function saveImage() {
+      if (!canvas.width) {
+        showToast('لا توجد صورة لحفظها', false);
+        return;
+      }
+      const a = document.createElement('a');
+      a.download = `ALM_text_${Date.now()}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      showToast('💾 تم حفظ الصورة (أرسلها كمستند للمحافظة على البيانات)');
+    }
+
+    // نسخ Base64
+    function copyBase64ToClipboard() {
+      if (!lastEncodedBase64) {
+        showToast('لا يوجد نص مشفر، قم بالتحويل أولاً', false);
+        return;
+      }
+      navigator.clipboard?.writeText(lastEncodedBase64).then(() => {
+        showToast('📋 تم نسخ النص المشفر إلى الحافظة');
+      }).catch(() => showToast('تعذر النسخ', false));
+    }
+
+    // ---------- فك التشفير من Base64 ----------
+    function decodeBase64ToText(base64, key32) {
+      // Base64 → Uint8Array (مشفر)
+      let encrypted;
+      try {
+        encrypted = base64ToUint8Array(base64);
+      } catch {
+        throw new Error('النص المشفر غير صالح');
+      }
+      // XOR
+      const decrypted = xorBytesWithKey(encrypted, key32);
+      return bytesToText(decrypted);
+    }
+
+    // استعادة من صورة
+    async function decodeFromImage() {
+      const file = imageInput.files[0];
+      if (!file) {
+        showToast('اختر صورة PNG أولاً', false);
+        return;
+      }
+
+      const key32 = parseKey32(userKeyInput.value);
+      showToast('🔍 جاري فك التشفير من الصورة...');
+
+      try {
+        const img = await createImageBitmap(file);
+        const c = document.createElement('canvas');
+        c.width = img.width;
+        c.height = img.height;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, c.width, c.height).data;
+        
+        // استخراج البايتات (RGB فقط)
+        const bytes = [];
+        for (let i = 0; i < data.length; i += 4) {
+          bytes.push(data[i], data[i+1], data[i+2]);
+        }
+        
+        const len1 = bytesToInt32(bytes[0], bytes[1], bytes[2], bytes[3]);
+        const len2 = bytesToInt32(bytes[4], bytes[5], bytes[6], bytes[7]);
+        if (len1 !== len2) throw new Error('رأس الصورة تالف (ربما تم ضغطها)');
+        
+        const crcStored = bytesToInt32(bytes[8], bytes[9], bytes[10], bytes[11]);
+        const payload = bytes.slice(12, 12 + len1);
+        if (payload.length < len1) throw new Error('البيانات ناقصة');
+        
+        const crcCalc = crc32(payload);
+        if (crcCalc !== crcStored) throw new Error('CRC غير متطابق – الصورة معدّلة أو المفتاح خاطئ');
+        
+        // payload هو Base64 بايتات
+        const base64 = bytesToText(new Uint8Array(payload));
+        const text = decodeBase64ToText(base64, key32);
+        
+        outputText.textContent = text;
+        showToast('✅ تم استعادة النص بنجاح!');
+      } catch (e) {
+        outputText.textContent = '❌ فشل الاستعادة: ' + e.message;
+        showToast('❌ فشل الاستعادة: ' + e.message, false);
+      }
+    }
+
+    // استعادة من Base64 يدوي
+    function decodeFromBase64Manual() {
+      const base64 = base64PasteArea.value.trim();
+      if (!base64) {
+        showToast('الصق النص المشفر أولاً', false);
+        return;
+      }
+      const key32 = parseKey32(userKeyInput.value);
+      try {
+        const text = decodeBase64ToText(base64, key32);
+        outputText.textContent = text;
+        showToast('✅ تم استعادة النص من النص المشفر!');
+      } catch (e) {
+        outputText.textContent = '❌ فشل: ' + e.message;
+        showToast('❌ ' + e.message, false);
+      }
+    }
+
+    // ---------- إعداد السحب والإفلات ----------
+    function setupDropZone(zone, inputEl, infoEl) {
+      zone.addEventListener('click', () => inputEl.click());
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length) {
+          inputEl.files = files;
+          updateImageFileInfo(files[0]);
+        }
+      });
+      inputEl.addEventListener('change', () => {
+        if (inputEl.files.length) updateImageFileInfo(inputEl.files[0]);
+      });
+    }
+
+    function updateImageFileInfo(file) {
+      imageFileInfo.textContent = `🖼️ ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+    }
+
+    setupDropZone(document.getElementById('imageDropZone'), imageInput, imageFileInfo);
+
+    // ---------- ربط الأحداث ----------
+    document.getElementById('encodeBtn').onclick = encodeToImage;
+    document.getElementById('saveImageBtn').onclick = saveImage;
+    document.getElementById('copyBase64Btn').onclick = copyBase64ToClipboard;
+    document.getElementById('decodeFromImageBtn').onclick = decodeFromImage;
+    document.getElementById('decodeFromBase64Btn').onclick = decodeFromBase64Manual;
+
+    showToast('👋 جاهز – اكتب نصاً ثم حوله إلى صورة');
+  })();
+</script>
+</body>
+</html>
